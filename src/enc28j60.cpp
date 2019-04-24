@@ -482,10 +482,10 @@ void ENC28J60::packetSend(uint16_t len) {
         // initiate transmission
         writeOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRTS);
         #if ETHERCARD_SEND_PIPELINING
-            if (retry == 0) return;
-        #endif
+            if (retry == 0) return;        
 
     resume_last_transmission:
+		#endif
 
         // wait until transmission has finished; referring to the data sheet and
         // to the errata (Errata Issue 13; Example 1) you only need to wait until either

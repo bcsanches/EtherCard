@@ -54,13 +54,13 @@
 * anymore. Compilation will still work but the request will never be
 * issued. Saves 4 bytes SRAM and 550 byte flash.
 */
-#define ETHERCARD_TCPCLIENT 1
+#define ETHERCARD_TCPCLIENT 0
 
 /** Enable TCP server functionality.
 *   Setting this to zero means that the program will not accept TCP client
 *   requests. Saves 2 bytes SRAM and 250 bytes flash.
 */
-#define ETHERCARD_TCPSERVER 1
+#define ETHERCARD_TCPSERVER 0
 
 /** Enable UDP server functionality.
 *   If zero UDP server is disabled. It is
@@ -76,7 +76,7 @@
 *   PINGs anymore. Also the callback that can be registered to answer incoming
 *   pings will not be called. Saves 2 bytes SRAM and 230 bytes flash.
 */
-#define ETHERCARD_ICMP 1
+#define ETHERCARD_ICMP 0
 
 /** Enable use of stash.
 *   Setting this to zero means that the stash mechanism cannot be used. Again

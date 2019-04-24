@@ -10,7 +10,7 @@
 
 #define gPB ether.buffer
 
-#define UDPSERVER_MAXLISTENERS 8    //the maximum number of port listeners.
+#define UDPSERVER_MAXLISTENERS 1    //the maximum number of port listeners.
 
 typedef struct {
     UdpServerCallback callback;

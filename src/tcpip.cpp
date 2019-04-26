@@ -34,7 +34,11 @@
 #define TCP_STATE_CLOSED        6
 
 #define TCPCLIENT_SRC_PORT_H 11 //Source port (MSB) for TCP/IP client connections - hardcode all TCP/IP client connection from ports in range 2816-3071
+
+#if ETHERCARD_TCPCLIENT
 static uint8_t tcpclient_src_port_l=1; // Source port (LSB) for tcp/ip client connections - increments on each TCP/IP request
+#endif
+
 static uint8_t tcp_fd; // a file descriptor, will be encoded into the port
 static uint8_t tcp_client_state; //TCP connection state: 1=Send SYN, 2=SYN sent awaiting SYN+ACK, 3=Established, 4=Not used, 5=Closing, 6=Closed
 static uint8_t tcp_client_port_h; // Destination port (MSB) of TCP/IP client connection
@@ -106,12 +110,14 @@ static bool client_arp_waiting(const uint8_t *ip)
     return !mac || memcmp(mac, allOnes, ETH_LEN) == 0;
 }
 
+#if ETHERCARD_TCPCLIENT
 // check if ARP is request is done
 static bool client_arp_ready(const uint8_t *ip)
 {
     const uint8_t *mac = EtherCard::arpStoreGetMac(ip);
     return mac && memcmp(mac, allOnes, ETH_LEN) != 0;
 }
+#endif
 
 // return
 //  - IP MAC address if IP is part of LAN
@@ -233,6 +239,7 @@ static void make_arp_answer_from_request() {
     EtherCard::packetSend(iter - gPB); // 42
 }
 
+#if ETHERCARD_TCPCLIENT
 static void make_echo_reply_from_request(uint16_t len) {
     make_eth_ip();
     gPB[ICMP_TYPE_P] = ICMP_TYPE_ECHOREPLY_V;
@@ -241,6 +248,7 @@ static void make_echo_reply_from_request(uint16_t len) {
     gPB[ICMP_CHECKSUM_P] += 0x08;
     EtherCard::packetSend(len);
 }
+#endif
 
 void EtherCard::makeUdpReply (const char *data,uint8_t datalen,uint16_t port) {
     if (datalen>220)
@@ -536,6 +544,7 @@ void EtherCard::updateBroadcastAddress()
         broadcastip[i] = myip[i] | ~netmask[i];
 }
 
+#if ETHERCARD_TCPCLIENT
 static void client_syn(uint8_t srcport,uint8_t dstport_h,uint8_t dstport_l) {
     setMACandIPs(EtherCard::hisip);
     gPB[ETH_TYPE_H_P] = ETHTYPE_IP_H_V;
@@ -567,6 +576,7 @@ static void client_syn(uint8_t srcport,uint8_t dstport_h,uint8_t dstport_l) {
     // 4 is the tcp mss option:
     EtherCard::packetSend(IP_HEADER_LEN+TCP_HEADER_LEN_PLAIN+ETH_HEADER_LEN+4);
 }
+#endif
 
 uint8_t EtherCard::clientTcpReq (uint8_t (*result_cb)(uint8_t,uint8_t,uint16_t,uint16_t),
                                  uint16_t (*datafill_cb)(uint8_t),uint16_t port) {
@@ -770,8 +780,7 @@ void EtherCard::packetLoopIdle()
 #endif
 }
 
-uint16_t EtherCard::packetLoop (uint16_t plen) {
-    uint16_t len;
+uint16_t EtherCard::packetLoop (uint16_t plen) {    
 
 #if ETHERCARD_DHCP
     if(using_dhcp) {
@@ -821,8 +830,7 @@ uint16_t EtherCard::packetLoop (uint16_t plen) {
 #endif
 #if ETHERCARD_UDPSERVER
     if (ether.udpServerListening() && gPB[IP_PROTO_P]==IP_PROTO_UDP_V)
-    {   
-        EtherCard::copyMac(destmacaddr, gPB + ETH_SRC_MAC);
+    {           
         //Call UDP server handler (callback) if one is defined for this packet
         if(ether.udpServerHasProcessedPacket(plen))
             return 0; //An UDP server handler (callback) has processed this packet
@@ -844,7 +852,7 @@ uint16_t EtherCard::packetLoop (uint16_t plen) {
             tcp_client_state = TCP_STATE_CLOSING;
             return 0;
         }
-        len = getTcpPayloadLength();
+        uint16_t len = getTcpPayloadLength();
         if (tcp_client_state==TCP_STATE_SYNSENT)
         {   //Waiting for SYN-ACK
             if ((gPB[TCP_FLAGS_P] & TCP_FLAGS_SYN_V) && (gPB[TCP_FLAGS_P] &TCP_FLAGS_ACK_V))
@@ -910,6 +918,8 @@ uint16_t EtherCard::packetLoop (uint16_t plen) {
 #if ETHERCARD_TCPSERVER
     //If we are here then this is a TCP/IP packet targeted at us and not related to our client connection so accept
     return accept(hisport, plen);
+#else
+	return 0;
 #endif
 }
 
